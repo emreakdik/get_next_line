@@ -1,22 +1,24 @@
 #include "get_next_line.h"
 
-char *ReadLine(int fd)
+char *ReadLine(int fd, char *Stack)
 {
     char *Buffer;
-    char *Stack;
     int ReadByte;
 
-    Buffer = malloc(sizeof(char) * BUFFER_SIZE);
-    while(1)
+    Buffer = malloc(sizeof(char) * BUFFER_SIZE + 1);
+    if(!Buffer)
+        return(NULL);
+    ReadByte = 1;
+    while(!ft_strchr(Stack, '\n') && ReadByte != 0)
     {
         ReadByte = read(fd, Buffer, BUFFER_SIZE);
-        if(ReadByte <= 0){
             if (ReadByte == -1)
+            {
+                free(Buffer);
                 return (NULL);
-            break;
-        }
+            }
+        Stack = ft_strjoin(Stack, Buffer);
     }
-    Stack = ft_strdup(Buffer);
     free(Buffer);
     return (Stack);
 }
@@ -31,7 +33,7 @@ char *get_next_line (int fd)
         return(NULL);
     
     if(!Stack){
-        Stack = ReadLine(fd);
+        Stack = ReadLine(fd, Stack);
         if (!Stack)
             return (NULL);
     }
