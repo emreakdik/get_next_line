@@ -84,9 +84,3 @@ int  main() {
 	return  0; 
 	}
 ```
-    -   O_CREAT: Dosya yoksa oluşturulur.
-    -   O_TRUNC: Dosya açıldığında içeriği silinir.
-    -   O_EXCL: Dosya zaten var ise hata verir.
-
-Ornek bir kullanim: 
-open("myfile.txt", O_RDWR | O_CREAT | O_TRUNC | O_EXCL, S_IRUSR | S_IWUSR);
