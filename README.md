@@ -29,35 +29,61 @@ Ayrıca, statik değişkenler sadece fonksiyon veya global alanda tanımlanabili
 
 Bu degiskenleri get_next_line projesinde girdi bolunmelerindeki kaybolabilecek, arada kalabilecek verileri kaybetmemek icin kullaniyoruz.
 
-## Open Komutlari
-C dilinde, "open" komutunu kullanmak için "fcntl.h" veya "sys/stat.h" başlık dosyalarını dahil etmeniz gerekir. Bu başlık dosyaları, dosya işlemleri için gerekli olan fonksiyonları içerir. Örneğin, aşağıdaki kod parçacığı, "myfile.txt" dosyasını okuma modunda açar:
+## File Descriptor (fd) nedir?
+"file descriptor" (dosya tanımlayıcısı), dosyalara veya diğer giriş/çıkış kaynaklarına erişmek için kullanılan bir tamsayı değeridir. Dosya tanımlayıcısı, işletim sistemi tarafından oluşturulan bir işaretçi gibidir,
+
+Dosya tanımlayıcıları, işletim sisteminde açık olan her dosya için benzersiz bir numaralandırmaya sahiptir. Örneğin, UNIX ve Linux sistemlerinde, 0, 1 ve 2 numaralı dosya tanımlayıcıları özel olarak aşağıdaki şekilde atanır:
+
+-   0: Standart giriş (stdin) - Klavyeden okuma için kullanılır.
+-   1: Standart çıkış (stdout) - Ekran yazdırma için kullanılır.
+-   2: Standart hata (stderr) - Hata mesajlarını göndermek için kullanılır.
+
+Ayrıca, 3 ve sonraki numaralar, açık olan diğer dosyalar için atanır. Bu dosya tanımlayıcıları, `open()` veya `fopen()` gibi dosya açma işlevleri kullanılarak elde edilir. Dosya tanımlayıcıları, `int` türünden değişkenlerde saklanır.
+
+## Fd icin open fonksiyonu nasil kullanilir?
+Fonksiyonun prototipi şu şekildedir:
+```c
+int open(const char *path, int flags, mode_t mode);` 
+```
+Burada, `path` parametresi açılacak dosyanın yolu ve adını içeren bir karakter dizisidir. `flags` parametresi açma modunu belirlemek için kullanılır ve hangi türde dosya erişimi yapılacağını belirtir. `mode` parametresi ise yeni bir dosya oluşturulduğunda izinlerin belirlenmesi için kullanılır (bu parametre sadece dosya oluşturulduğunda önemlidir).
+
+`open()` işlevi, bir dosya tanımlayıcısı (file descriptor) döndürür. Dosya tanımlayıcısı, dosyaya erişim ve dosya üzerinde işlem yapmak için kullanılır. Eğer işlem başarısız olursa, -1 değeri döndürür.
+
+---
+ **en sık kullanılan `flags` parametreleri ve açıklamaları:**
+
+1.  `O_RDONLY`: Dosyayı sadece okuma modunda açar. Dosyanın içeriği değiştirilemez, sadece okunabilir.
+    
+2.  `O_WRONLY`: Dosyayı sadece yazma modunda açar. Dosyanın içeriği okunamaz, sadece değiştirilebilir.
+    
+3.  `O_RDWR`: Dosyayı hem okuma hem de yazma modunda açar. Dosya içeriğini okuyabilir ve değiştirebilirsiniz.
+    
+4.  `O_CREAT`: Eğer dosya yoksa, yeni bir dosya oluşturur. Bu bayrak, dosya açma işleminin yeni bir dosya oluşturma işlemi için kullanılacağını belirtir.
+    
+5.  `O_TRUNC`: Dosya varsa, içeriğini temizler (sıfırlar). Dosyayı açarken içeriği silmek ve dosyayı boşaltmak için kullanılır.
+    
+6.  `O_APPEND`: Dosya varsa, dosyanın sonuna ekler. Yani, her yazma işlemi dosyanın sonuna eklenir, varolan içeriği değiştirmez.
+    
+7.  `O_EXCL`: Dosya varsa, hata döndürür. Bu bayrak, `O_CREAT` bayrağıyla birlikte kullanılır ve eğer dosya zaten varsa hata döndürür.
+    
+8.  `O_TRUNC | O_CREAT`: Eğer dosya varsa içeriğini siler, eğer dosya yoksa yeni bir dosya oluşturur. Bu bayrak, dosya içeriğini sıfırlayarak mevcut dosyayı kullanmak için kullanılır.
 
 ```c
-#include <fcntl.h>
-#include <sys/stat.h>
-
-int fd;
-
-fd = open("myfile.txt", O_RDONLY);
-if (fd == -1) {
-    // Dosya açma hatası
-} else {
-    // Dosya başarıyla açıldı
-}
+#include <fcntl.h>  
+#include <unistd.h>  
+int  main() { 
+	int fd; 
+// Dosyayı yazma modunda (write-only) aç 
+	fd = open("example.txt", O_WRONLY); 
+	if (fd == -1) { 
+		perror("Dosya acilamadi"); 
+		return  1; 
+	} 
+// Dosyayı kapat 
+	close(fd); 
+	return  0; 
+	}
 ```
-
-Bu örnekte, dosya adı "myfile.txt" ve mod O_RDONLY (sadece okuma) olarak belirlenmiştir. Ayrıca, dosya açılırken fd değişkenine atanır, bu değişken dosya işlemleri için kullanılacak dosya tanıtıcısıdır.
-
-"open" fonksiyonu, iki temel parametre alır:
-
-1.  **path**: Bu parametre, açılmak istenen dosya veya klasörün yolunu içerir. Bu yol, absolut veya relatif olarak belirlenebilir.
-    
-2.  **flags**: Bu parametre, dosyanın nasıl açılacağını belirler. Örneğin, dosya sadece okunacak mı yoksa yazılacak mı, eğer dosya yoksa oluşturulacak mı, vb. Bu parametre için aşağıdaki değerler kullanılabilir:
-    
-    -   O_RDONLY: Dosya sadece okunur.
-    -   O_WRONLY: Dosya sadece yazılır.
-    -   O_RDWR: Dosya hem okunur hem yazılır.
-    -   O_APPEND: Dosyaya yazarken her zaman sonuna ekler.
     -   O_CREAT: Dosya yoksa oluşturulur.
     -   O_TRUNC: Dosya açıldığında içeriği silinir.
     -   O_EXCL: Dosya zaten var ise hata verir.
